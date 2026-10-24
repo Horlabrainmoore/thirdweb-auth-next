@@ -6,8 +6,8 @@ import {
 	type VerifyLoginPayloadParams,
 	createAuth,
 } from "thirdweb/auth";
+import { createThirdwebClient } from "thirdweb";
 import { privateKeyToAccount } from "thirdweb/wallets";
-import { client } from "../../../lib/client";
 
 function getThirdwebAuth() {
 	const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY?.trim();
@@ -21,10 +21,23 @@ function getThirdwebAuth() {
 		throw new Error("Missing NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN in project environment variables.");
 	}
 
+	const clientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID?.trim();
+	const secretKey = process.env.THIRDWEB_SECRET_KEY?.trim();
+
+	if (!clientId && !secretKey) {
+		throw new Error(
+			"Missing NEXT_PUBLIC_THIRDWEB_CLIENT_ID or THIRDWEB_SECRET_KEY in project environment variables.",
+		);
+	}
+
+	const authClient = createThirdwebClient(
+		secretKey ? { secretKey } : { clientId: clientId as string },
+	);
+
 	return createAuth({
 		domain,
-		adminAccount: privateKeyToAccount({ client, privateKey }),
-		client,
+		adminAccount: privateKeyToAccount({ client: authClient, privateKey }),
+		client: authClient,
 	});
 }
 
