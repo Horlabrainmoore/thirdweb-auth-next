@@ -9,11 +9,17 @@ import { privateKeyToAccount } from "thirdweb/wallets";
 import { client } from "../../../lib/client";
 
 function getThirdwebAuth() {
-	const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY?.trim();
+	const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY?.trim().replace(/^0x/i, "");
 	const domain = process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN?.trim();
 
 	if (!privateKey) {
 		throw new Error("Missing THIRDWEB_ADMIN_PRIVATE_KEY in project environment variables.");
+	}
+
+	if (!/^[0-9a-fA-F]{64}$/.test(privateKey)) {
+		throw new Error(
+			"THIRDWEB_ADMIN_PRIVATE_KEY must be a 32-byte hexadecimal private key (64 hex characters, with an optional 0x prefix).",
+		);
 	}
 
 	if (!domain) {
