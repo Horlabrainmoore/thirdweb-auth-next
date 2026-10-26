@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Lato:wght@400;700;900&family=Manrope:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
 
 :root { --ink: #151728; --muted: #74798a; --line: #e5e6ed; --paper: #fbfbfd; --violet: #6357e9; --violet-light: #f0efff; --mint: #b9edcc; }
 * { box-sizing: border-box; }
@@ -15,3 +15,19 @@ button { font: inherit; cursor: pointer; }
 footer { width: min(1240px, calc(100% - 40px)); margin: 0 auto; padding: 33px 0 45px; display: flex; justify-content: space-between; color: #9b9daa; font-size: 10px; }footer b { padding: 0 7px; color: #d0d1d8; }footer .footer-status { margin-left: 6px; }
 @media (max-width: 760px) { .topbar { height: auto; min-height: 68px; flex-wrap: wrap; gap: 15px; padding: 14px 20px; }.topnav { order: 3; flex-basis: 100%; gap: 18px; }.nav-link { padding: 4px 0 10px; }.top-actions { margin-left: auto; }.version-pill { display: none; }.workspace { padding-top: 45px; }.hero h1 { font-size: 49px; }.metrics { grid-template-columns: repeat(2, 1fr); margin: 52px 0 35px; }.metrics > div:nth-child(2) { border-right: 0; }.metrics > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }.content-grid { grid-template-columns: 1fr; }.category-grid { grid-template-columns: 1fr; }.api-panel, .reference-panel, .activity-panel { padding: 20px; }footer { flex-direction: column; gap: 10px; } }
 @media (max-width: 430px) { .top-actions .tw-connect-wallet { max-width: 145px; }.hero-actions { flex-direction: column; align-items: stretch; }.primary-button, .secondary-button { width: 100%; }.activity-row time { display: none; } }
+
+/* Targeted visual refinements from the supplied design edit. */
+main { background: rgba(48, 56, 138, 0.8); }
+.console-shell { background: rgba(29, 128, 138, 0.9); }
+.topbar { background: rgba(95, 0, 0, 0.8); }
+.workspace { font-family: "Lato", sans-serif; background: rgba(53, 131, 47, 0.66); }
+.top-actions .tw-connect-wallet { font-family: "Poppins", sans-serif; }
+.api-panel { background: #535464; }
+.api-panel > .panel-heading { box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+.api-panel > .panel-heading h2 { color: #00ffa3; }
+.api-panel .category-grid:nth-of-type(2) .category-card:nth-of-type(1) { background: #1f1244; }
+.api-panel .category-grid:nth-of-type(2) .category-card:nth-of-type(3) { background: #161125; }
+.api-panel .category-grid:nth-of-type(2) .category-card:nth-of-type(1) .category-copy strong { color: #eaac2e; }
+.api-panel .category-grid:nth-of-type(2) .category-card:nth-of-type(1) .category-copy small { color: #56d513; }
+.api-panel .category-grid:nth-of-type(2) .category-card:nth-of-type(1) .category-copy em { color: #cc3b1c; }
+
