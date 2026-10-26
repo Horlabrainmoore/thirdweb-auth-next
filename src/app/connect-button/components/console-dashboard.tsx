@@ -67,7 +67,7 @@ export function ConsoleDashboard() {
               getLoginPayload: async ({ address }) => generatePayload({ address, chainId: 17000 }),
               doLogout: async () => { await logout(); },
             }}
-            connectButton={{ label: "Connect wallet" }}
+            connectButton={{ label: "sign in" }}
           />
         </div>
       </header>
