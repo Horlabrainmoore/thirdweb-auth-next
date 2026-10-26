@@ -9,8 +9,14 @@ import { createThirdwebClient } from "thirdweb";
 import { privateKeyToAccount } from "thirdweb/wallets";
 
 function getThirdwebAuth() {
-	const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY?.trim().replace(/^0x/i, "");
-	const domain = process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN?.trim();
+	const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY
+		?.trim()
+		.replace(/^['"]|['"]$/g, "")
+		.replace(/^0x/i, "")
+		.replace(/[\s-]/g, "");
+	const domain = process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN
+		?.trim()
+		.replace(/^['"]|['"]$/g, "");
 
 	if (!privateKey) {
 		throw new Error("Missing THIRDWEB_ADMIN_PRIVATE_KEY in project environment variables.");
