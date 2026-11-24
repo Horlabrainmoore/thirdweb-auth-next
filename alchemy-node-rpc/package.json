@@ -1,0 +1,12 @@
+{
+  "name": "alchemy-node-rpc-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "node demo-script.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  }
+}
