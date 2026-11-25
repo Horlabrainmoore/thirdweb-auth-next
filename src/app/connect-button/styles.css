@@ -169,10 +169,21 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .bridge-widget-container { width: 100%; min-height: 468px; }
 .widget-error { align-self: center; margin: 0; padding: 14px 16px; border: 1px solid #f0cac6; border-radius: 6px; background: var(--red-soft); color: var(--red); font-size: 12px; line-height: 1.5; }
 .asset-tool-note { margin: 14px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.transfer-widget-content { display: flex; flex-direction: column; width: min(480px, 100%); gap: 12px; }
+.transfer-details { display: flex; align-items: center; gap: 12px; padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+.transfer-token-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--green-soft); color: var(--green); font-size: 18px; font-weight: 750; }
+.transfer-details strong, .transfer-details span { display: block; }
+.transfer-details strong { font-size: 13px; }
+.transfer-details span { margin-top: 4px; color: var(--muted); font-size: 11px; }
+.transfer-recipient-label { margin-top: 4px; color: #3f4853; font-size: 11px; font-weight: 700; }
+.transfer-recipient-input { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #dfe4e9; border-radius: 6px; background: var(--code); color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.transfer-recipient-input:focus { border-color: #e8b16f; }
+.transfer-warning { margin: 0; color: #78552d; font-size: 10px; line-height: 1.6; }
+.transfer-state { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: #fafbfc; color: var(--muted); font-size: 11px; line-height: 1.6; }
 
 @media (max-width: 740px) {
-  .tool-tabs { width: 100%; margin-bottom: 21px; }
-  .tool-tab { flex: 1; padding-inline: 8px; }
+  .tool-tabs { width: 100%; margin-bottom: 21px; overflow-x: auto; }
+  .tool-tab { flex: 0 0 auto; padding-inline: 11px; }
   .asset-tool-heading { flex-direction: column; gap: 12px; }
   .swap-widget-surface, .bridge-widget-surface { min-height: 500px; }
 }

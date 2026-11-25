@@ -179,6 +179,9 @@ export function ConsoleDashboard() {
             <button type="button" className={`tool-tab${activeTool === "api" ? " is-active" : ""}`} onClick={() => setActiveTool("api")} aria-current={activeTool === "api" ? "page" : undefined}>API Explorer</button>
             <button type="button" className={`tool-tab${activeTool === "swap" ? " is-active" : ""}`} onClick={() => setActiveTool("swap")} aria-current={activeTool === "swap" ? "page" : undefined}>Swap</button>
             <button type="button" className={`tool-tab${activeTool === "bridge" ? " is-active" : ""}`} onClick={() => setActiveTool("bridge")} aria-current={activeTool === "bridge" ? "page" : undefined}>Bridge</button>
+            <button type="button" className={`tool-tab${activeTool === "buy" ? " is-active" : ""}`} onClick={() => setActiveTool("buy")} aria-current={activeTool === "buy" ? "page" : undefined}>Buy</button>
+            <button type="button" className={`tool-tab${activeTool === "checkout" ? " is-active" : ""}`} onClick={() => setActiveTool("checkout")} aria-current={activeTool === "checkout" ? "page" : undefined}>Checkout</button>
+            <button type="button" className={`tool-tab${activeTool === "transfer" ? " is-active" : ""}`} onClick={() => setActiveTool("transfer")} aria-current={activeTool === "transfer" ? "page" : undefined}>Transfer</button>
           </nav>
           {activeTool === "api" ? <>
           <div className="page-heading">

@@ -2,10 +2,57 @@
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
-import { SwapWidget } from "thirdweb/react";
+import { getContract } from "thirdweb";
+import { arbitrum, polygon } from "thirdweb/chains";
+import { transfer } from "thirdweb/extensions/erc20";
+import { BuyWidget, CheckoutWidget, SwapWidget, TransactionWidget, useActiveAccount } from "thirdweb/react";
 import { client } from "../../../lib/client";
 
-export type AssetToolMode = "swap" | "bridge";
+export type AssetToolMode = "swap" | "bridge" | "buy" | "checkout" | "transfer";
+
+const polygonUsdc = getContract({
+  address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+  chain: polygon,
+  client,
+});
+
+function TokenTransferPanel() {
+  const account = useActiveAccount();
+  const [recipient, setRecipient] = useState("");
+  const validRecipient = /^0x[a-fA-F0-9]{40}$/.test(recipient.trim()) && recipient.trim().toLowerCase() !== account?.address.toLowerCase();
+
+  return (
+    <div className="transfer-widget-content">
+      <div className="transfer-details">
+        <div className="transfer-token-mark" aria-hidden="true">$</div>
+        <div><strong>USDC on Polygon</strong><span>Example transfer amount: 50 USDC</span></div>
+      </div>
+      <label className="transfer-recipient-label" htmlFor="transfer-recipient">Recipient wallet address</label>
+      <input
+        id="transfer-recipient"
+        className="transfer-recipient-input"
+        inputMode="text"
+        autoComplete="off"
+        spellCheck={false}
+        placeholder="0x…"
+        value={recipient}
+        onChange={(event) => setRecipient(event.target.value)}
+        aria-describedby="transfer-warning"
+      />
+      <p id="transfer-warning" className="transfer-warning">This sends 50 USDC from your connected wallet on Polygon to the address above. Verify the network, recipient, and amount in your wallet before approving.</p>
+      {account && validRecipient ? (
+        <TransactionWidget
+          client={client}
+          transaction={transfer({ contract: polygonUsdc, amount: "50", to: recipient.trim() as `0x${string}` })}
+        />
+      ) : (
+        <p className="transfer-state" role="status">
+          {!account ? "Connect your wallet to prepare a transfer." : recipient.trim() && !validRecipient ? "Enter a valid external wallet address." : "Enter an external recipient address to continue."}
+        </p>
+      )}
+    </div>
+  );
+}
 
 type BridgeWidgetOptions = {
   clientId: string;
@@ -63,22 +110,37 @@ function BridgePanel() {
 }
 
 export function AssetTools({ mode }: { mode: AssetToolMode }) {
-  const isSwap = mode === "swap";
+  const account = useActiveAccount();
+  const config = {
+    swap: { title: "Swap tokens", description: "Exchange tokens across supported networks with thirdweb." },
+    bridge: { title: "Bridge assets", description: "Move tokens between chains or explore available onramps." },
+    buy: { title: "Buy crypto", description: "Explore supported ways to fund a wallet with crypto or fiat." },
+    checkout: { title: "Checkout", description: "Pay in USD for a purchase using your connected wallet." },
+    transfer: { title: "Send USDC", description: "Prepare a direct USDC transfer to an external Polygon wallet." },
+  }[mode];
 
   return (
     <section className="asset-tool-page" aria-labelledby="asset-tool-title">
       <header className="asset-tool-heading">
         <div>
           <span className="panel-kicker">THIRDWEB</span>
-          <h2 id="asset-tool-title">{isSwap ? "Swap tokens" : "Bridge assets"}</h2>
-          <p>{isSwap ? "Exchange tokens across supported networks with thirdweb." : "Move tokens between chains or explore available onramps."}</p>
+          <h2 id="asset-tool-title">{config.title}</h2>
+          <p>{config.description}</p>
         </div>
         <span className="version-tag"><span className="version-dot" /> Review before confirming</span>
       </header>
-      <div className={`asset-widget-surface${isSwap ? " swap-widget-surface" : " bridge-widget-surface"}`}>
-        {isSwap ? <SwapWidget client={client} theme="light" /> : <BridgePanel />}
+      <div className={`asset-widget-surface ${mode}-widget-surface`}>
+        {mode === "swap" && <SwapWidget client={client} theme="light" />}
+        {mode === "bridge" && <BridgePanel />}
+        {mode === "buy" && <BuyWidget client={client} currency="USD" chain={arbitrum} amount="0.002" />}
+        {mode === "checkout" && (account ? (
+          <CheckoutWidget client={client} currency="USD" chain={arbitrum} amount="0.01" seller={account.address as `0x${string}`} />
+        ) : (
+          <p className="transfer-state" role="status">Connect your wallet to open checkout. The connected wallet will be used as the seller address.</p>
+        ))}
+        {mode === "transfer" && <TokenTransferPanel />}
       </div>
-      <p className="asset-tool-note">Review the selected network, token, amount, route, and fees in the widget before approving any transaction.</p>
+      <p className="asset-tool-note">Review the selected network, token, amount, destination, and fees in the widget before approving any transaction. Wallet transactions are final once confirmed.</p>
     </section>
   );
 }
