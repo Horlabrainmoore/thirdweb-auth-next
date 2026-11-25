@@ -9,6 +9,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@x402/core": "2.32.0",
+    "@x402/evm": "2.32.0",
+    "@x402/fetch": "2.32.0",
     "next": "^15.2.8",
     "react": "^19",
     "react-dom": "^19",
