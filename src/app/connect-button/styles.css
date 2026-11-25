@@ -2,6 +2,7 @@
 
 :root {
   color-scheme: light;
+  --mint: #23703f;
   --canvas: #f4f6f8;
   --surface: #ffffff;
   --ink: #1b2027;
@@ -33,7 +34,7 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .network-dot, .version-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .topbar-divider { color: #c5cad1; }
 .topbar-wallet { margin-left: 2px; }
-.topbar-wallet .tw-connect-wallet { min-height: 37px !important; border-radius: 7px !important; font-size: 12px !important; }
+.topbar-wallet .tw-connect-wallet { min-height: 37px !important; border-radius: 7px !important; font-family: system-ui, sans-serif !important; font-size: 12px !important; }
 
 .btc-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: calc(100vh - 68px); }
 .operations-sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--line); background: #fbfcfd; padding: 29px 15px 18px; }
