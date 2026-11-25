@@ -1,118 +1,264 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ConnectButton } from "thirdweb/react";
+import { ExactEvmScheme, type ClientEvmSigner } from "@x402/evm";
+import { x402Client } from "@x402/core/client";
+import { wrapFetchWithPayment } from "@x402/fetch";
+import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { defineChain } from "thirdweb";
-import { client } from "../../../lib/client";
-import { generatePayload, isLoggedIn, login, logout } from "../actions/auth";
+import { client as thirdwebClient } from "../../../lib/client";
+import { operations, validateOperationBody, type OperationId } from "../../../lib/bitcoin-operations";
 
-type ApiCategory = {
-  name: string;
-  count: string;
-  description: string;
-  accent: string;
+type ApiResult = {
+  status: number;
+  body: unknown;
+  paid: boolean;
+  durationMs: number;
 };
 
-const categories: ApiCategory[] = [
-  { name: "Authentication", count: "12 endpoints", description: "Wallet auth, social login, passkeys and SIWE.", accent: "violet" },
-  { name: "Wallets", count: "34 endpoints", description: "Create, manage and transact with user wallets.", accent: "blue" },
-  { name: "Tokens", count: "28 endpoints", description: "Launch, mint and manage ERC20, ERC721 and ERC1155.", accent: "mint" },
-  { name: "Gateway", count: "19 endpoints", description: "Real-time and historical onchain infrastructure.", accent: "amber" },
-  { name: "Bridge", count: "8 endpoints", description: "Move assets across chains and wallets.", accent: "rose" },
-  { name: "AI", count: "6 endpoints", description: "Build agents that understand live onchain data.", accent: "indigo" },
-];
+const baseChain = defineChain(8453);
+const endpointGroups = ["Address", "Transactions", "Blocks", "Broadcast"] as const;
 
-const activity = [
-  ["Wallet authentication", "POST /v1/auth/complete", "2 min ago", "200"],
-  ["Token balance lookup", "GET /v1/tokens/balances", "18 min ago", "200"],
-  ["Bridge quote requested", "POST /v1/bridge/quote", "42 min ago", "200"],
-];
+function prettyJson(value: unknown) {
+  return JSON.stringify(value, null, 2);
+}
 
 export function ConsoleDashboard() {
-  const [activeView, setActiveView] = useState("Overview");
-  const [selectedCategory, setSelectedCategory] = useState("Authentication");
-  const [copied, setCopied] = useState(false);
+  const account = useActiveAccount();
+  const [selectedId, setSelectedId] = useState<OperationId>("address");
+  const [requestBody, setRequestBody] = useState(prettyJson(operations[0].example));
+  const [approvePayment, setApprovePayment] = useState(false);
+  const [confirmBroadcast, setConfirmBroadcast] = useState(false);
+  const [broadcastPhrase, setBroadcastPhrase] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<ApiResult | null>(null);
+  const selected = useMemo(() => operations.find((operation) => operation.id === selectedId) ?? operations[0], [selectedId]);
+  const broadcastReady = selectedId !== "broadcast" || (confirmBroadcast && broadcastPhrase === "BROADCAST");
 
-  const selected = useMemo(
-    () => categories.find((category) => category.name === selectedCategory) ?? categories[0],
-    [selectedCategory],
-  );
+  const selectOperation = (id: OperationId) => {
+    const operation = operations.find((item) => item.id === id);
+    if (!operation) return;
+    setSelectedId(id);
+    setRequestBody(prettyJson(operation.example));
+    setApprovePayment(false);
+    setConfirmBroadcast(false);
+    setBroadcastPhrase("");
+    setError("");
+    setResult(null);
+  };
 
-  const copyExample = async () => {
-    await navigator.clipboard?.writeText("curl https://api.thirdweb.com/v1/auth/initiate \\\n  -H 'x-client-id: YOUR_CLIENT_ID'");
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+  const restoreExample = () => {
+    setRequestBody(prettyJson(selected.example));
+    setError("");
+  };
+
+  const executeRequest = async () => {
+    setError("");
+    setResult(null);
+    if (!account) {
+      setError("Connect a wallet before sending a paid request.");
+      return;
+    }
+    if (!approvePayment) {
+      setError("Approve this single request before continuing.");
+      return;
+    }
+    if (!broadcastReady) {
+      setError("Confirm the signed transaction and type BROADCAST to continue.");
+      return;
+    }
+
+    let body: unknown;
+    try {
+      body = JSON.parse(requestBody);
+    } catch {
+      setError("Request body must be valid JSON.");
+      return;
+    }
+    const validationError = validateOperationBody(selectedId, body);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const startedAt = performance.now();
+    setLoading(true);
+    try {
+      const signer: ClientEvmSigner = {
+        address: account.address as `0x${string}`,
+        signTypedData: (typedData) => account.signTypedData(typedData as never),
+      };
+      const paymentClient = new x402Client()
+        .register("eip155:8453", new ExactEvmScheme(signer))
+        .setSpendControls({ maxAmountPerPayment: "$0.005" });
+      const paidFetch = wrapFetchWithPayment(fetch, paymentClient);
+      const response = await paidFetch(`/api/bitcoin/${selectedId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body, confirmedBroadcast: selectedId === "broadcast" && broadcastReady }),
+      });
+      const text = await response.text();
+      let responseBody: unknown = text;
+      if (text) {
+        try {
+          responseBody = JSON.parse(text);
+        } catch {
+          responseBody = text;
+        }
+      }
+      setResult({
+        status: response.status,
+        body: responseBody,
+        paid: Boolean(response.headers.get("payment-response")),
+        durationMs: Math.round(performance.now() - startedAt),
+      });
+      if (!response.ok) {
+        const message = typeof responseBody === "object" && responseBody !== null && "error" in responseBody
+          ? String(responseBody.error)
+          : `The API returned HTTP ${response.status}.`;
+        setError(message);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The request could not be completed.");
+    } finally {
+      setLoading(false);
+      setApprovePayment(false);
+    }
   };
 
   return (
-    <div className="console-shell">
-      <header className="topbar">
-        <a className="brand" href="/" aria-label="thirdweb API home">
-          <span className="brand-mark">t</span>
-          <span>thirdweb <strong>API</strong></span>
+    <div className="btc-shell">
+      <header className="btc-topbar">
+        <a className="btc-brand" href="/" aria-label="Bitcoin Explorer API home">
+          <span className="btc-brand-mark">₿</span>
+          <span>Explorer <strong>API</strong></span>
         </a>
-        <nav className="topnav" aria-label="Primary navigation">
-          {["Overview", "API reference", "Activity"].map((item) => (
-            <button key={item} className={activeView === item ? "nav-link active" : "nav-link"} onClick={() => setActiveView(item)}>{item}</button>
-          ))}
-        </nav>
-        <div className="top-actions">
-          <span className="version-pill">v1.22.13</span>
-          <ConnectButton
-            client={client}
-            accountAbstraction={{ chain: defineChain(17000), sponsorGas: true }}
-            auth={{
-              isLoggedIn: async () => isLoggedIn(),
-              doLogin: async (params) => { await login(params); },
-              getLoginPayload: async ({ address }) => generatePayload({ address, chainId: 17000 }),
-              doLogout: async () => { await logout(); },
-            }}
-            connectButton={{ label: "sign in" }}
-          />
+        <div className="topbar-center"><span className="network-dot" /> Bitcoin mainnet <span className="topbar-divider">/</span> x402 v2</div>
+        <div className="topbar-wallet">
+          <ConnectButton client={thirdwebClient} chain={baseChain} connectButton={{ label: "Connect Base wallet" }} />
         </div>
       </header>
 
-      <main className="workspace">
-        <section className="hero">
-          <div className="eyebrow"><span className="status-dot" /> API server operational</div>
-          <h1>Build onchain,<br /><span>without the overhead.</span></h1>
-          <p>One unified API for wallets, authentication, tokens, bridging and intelligent onchain apps.</p>
-          <div className="hero-actions">
-            <button className="primary-button" onClick={() => setActiveView("API reference")}>Explore API reference <span>→</span></button>
-            <button className="secondary-button" onClick={copyExample}>{copied ? "Copied to clipboard" : "Copy quickstart"}</button>
+      <div className="btc-layout">
+        <aside className="operations-sidebar" aria-label="Bitcoin operations">
+          <div className="sidebar-title">
+            <span className="overline">API CATALOG</span>
+            <h1>BitcoinOperations</h1>
+            <p>Blockchain explorer · 8 endpoints</p>
           </div>
-        </section>
+          <nav className="operation-nav" aria-label="Bitcoin endpoint list">
+            {endpointGroups.map((group) => (
+              <div className="operation-group" key={group}>
+                <h2>{group}</h2>
+                {operations.filter((operation) => operation.group === group).map((operation) => (
+                  <button
+                    type="button"
+                    key={operation.id}
+                    className={`operation-link${selectedId === operation.id ? " is-active" : ""}`}
+                    onClick={() => selectOperation(operation.id)}
+                    aria-pressed={selectedId === operation.id}
+                  >
+                    <span className="operation-link-dot" />
+                    <span>{operation.name}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </nav>
+          <div className="sidebar-footnote">
+            <span className="sidebar-footnote-mark">i</span>
+            <p>Each paid call is capped at <strong>$0.005 USDC</strong>. Your wallet approves every request.</p>
+          </div>
+        </aside>
 
-        <section className="metrics" aria-label="API metrics">
-          <div><span className="metric-label">REQUESTS TODAY</span><strong>24,891</strong><small className="positive">+18.4%</small></div>
-          <div><span className="metric-label">SUCCESS RATE</span><strong>99.98%</strong><small className="positive">+0.02%</small></div>
-          <div><span className="metric-label">AVG. LATENCY</span><strong>142ms</strong><small>— 8ms</small></div>
-          <div><span className="metric-label">SUPPORTED CHAINS</span><strong>2,000+</strong><small>Across EVM & Solana</small></div>
-        </section>
-
-        <div className="content-grid">
-          <section className="panel api-panel">
-            <div className="panel-heading"><div><span className="section-kicker">EXPLORE THE PLATFORM</span><h2>Everything you need to ship</h2></div><button className="text-button" onClick={() => setActiveView("API reference")}>View all endpoints <span>↗</span></button></div>
-            <div className="category-grid">
-              {categories.map((category) => <button key={category.name} className={`category-card ${selectedCategory === category.name ? "selected" : ""}`} onClick={() => setSelectedCategory(category.name)}><span className={`category-icon ${category.accent}`}>{category.name.slice(0, 1)}</span><span className="category-copy"><strong>{category.name}</strong><small>{category.count}</small><em>{category.description}</em></span><span className="card-arrow">↗</span></button>)}
+        <main className="operation-main">
+          <div className="page-heading">
+            <div>
+              <div className="breadcrumbs"><span>API Reference</span><span>/</span><strong>BitcoinOperations</strong></div>
+              <h2>Bitcoin endpoints</h2>
+              <p>Read addresses, transactions and blocks—or broadcast a signed transaction.</p>
             </div>
-          </section>
+            <span className="version-tag"><span className="version-dot" /> x402 v2</span>
+          </div>
 
-          <aside className="panel reference-panel">
-            <div className="panel-heading"><div><span className="section-kicker">SELECTED MODULE</span><h2>{selected.name}</h2></div><span className="openapi-badge">OpenAPI 3.1</span></div>
-            <p className="reference-description">{selected.description} Explore authenticated endpoints with your connected wallet.</p>
-            <div className="endpoint-row"><span className="method post">POST</span><code>/v1/auth/initiate</code><span className="endpoint-status">200</span></div>
-            <div className="endpoint-row"><span className="method post">POST</span><code>/v1/auth/complete</code><span className="endpoint-status">200</span></div>
-            <button className="outline-button" onClick={() => setActiveView("API reference")}>Open module reference <span>→</span></button>
-          </aside>
-        </div>
+          <div className="endpoint-heading">
+            <div className="endpoint-route"><span className="method-badge">POST</span><code>{selected.path}</code></div>
+            <span className="request-cost">≤ $0.005 <span>per request</span></span>
+          </div>
 
-        <section className="panel activity-panel">
-          <div className="panel-heading"><div><span className="section-kicker">LIVE ACTIVITY</span><h2>Recent API requests</h2></div><button className="text-button" onClick={() => setActiveView("Activity")}>View activity <span>↗</span></button></div>
-          <div className="activity-list">{activity.map(([label, endpoint, time, status]) => <div className="activity-row" key={endpoint}><span className="activity-mark">✓</span><span className="activity-name"><strong>{label}</strong><code>{endpoint}</code></span><time>{time}</time><span className="success-code">{status}</span></div>)}</div>
-        </section>
-      </main>
-      <footer><span>thirdweb API <b>•</b> Built for developers</span><span>Docs <b>·</b> Support <b>·</b> Status <i className="footer-status" /> All systems operational</span></footer>
+          <div className="request-response-grid">
+            <section className="surface request-panel" aria-labelledby="request-title">
+              <div className="panel-head">
+                <div><span className="panel-kicker">REQUEST</span><h3 id="request-title">{selected.name}</h3><p>{selected.description}</p></div>
+                <button type="button" className="quiet-button" onClick={restoreExample}>Restore example</button>
+              </div>
+              <div className="editor-label-row"><label htmlFor="request-json">JSON body</label><span>application/json</span></div>
+              <textarea
+                id="request-json"
+                className="json-editor"
+                value={requestBody}
+                onChange={(event) => setRequestBody(event.target.value)}
+                spellCheck={false}
+                aria-describedby="body-hint"
+              />
+              <p id="body-hint" className="editor-hint">Use the endpoint&apos;s documented fields. The example is editable before submission.</p>
+
+              <div className="payment-callout">
+                <span className="payment-icon" aria-hidden="true">$</span>
+                <div><strong>One request, one approval</strong><p>Payment is signed by your connected wallet on Base. The client refuses any request above the $0.005 cap.</p></div>
+              </div>
+              <label className="approval-row">
+                <input type="checkbox" checked={approvePayment} onChange={(event) => setApprovePayment(event.target.checked)} />
+                <span>I approve this single request for up to <strong>$0.005 USDC</strong>.</span>
+              </label>
+              {selectedId === "broadcast" && (
+                <div className="broadcast-approval">
+                  <label className="approval-row">
+                    <input type="checkbox" checked={confirmBroadcast} onChange={(event) => setConfirmBroadcast(event.target.checked)} />
+                    <span>I understand this will broadcast a signed transaction and cannot be undone.</span>
+                  </label>
+                  <label className="phrase-label" htmlFor="broadcast-confirmation">Type BROADCAST to confirm</label>
+                  <input
+                    id="broadcast-confirmation"
+                    className="phrase-input"
+                    value={broadcastPhrase}
+                    onChange={(event) => setBroadcastPhrase(event.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+              )}
+              {error && <p className="form-error" role="alert">{error}</p>}
+              <button type="button" className="execute-button" onClick={executeRequest} disabled={loading || !account || !approvePayment || !broadcastReady}>
+                <span>{loading ? "Waiting for wallet approval…" : "Authorize & send request"}</span>
+                {!loading && <span aria-hidden="true">↗</span>}
+              </button>
+              <p className="execute-note">No request is sent until you approve above and confirm in your wallet.</p>
+            </section>
+
+            <section className="surface response-panel" aria-labelledby="response-title">
+              <div className="panel-head response-head">
+                <div><span className="panel-kicker">OUTPUT</span><h3 id="response-title">Response</h3></div>
+                {result && <span className={`response-status${result.status >= 200 && result.status < 300 ? " is-success" : " is-error"}`}>{result.status}</span>}
+              </div>
+              {result ? (
+                <>
+                  <div className="response-meta"><span>{result.durationMs} ms</span>{result.paid && <strong>Payment settled</strong>}</div>
+                  <pre className="response-json"><code>{prettyJson(result.body)}</code></pre>
+                </>
+              ) : (
+                <div className="response-empty">
+                  <span className="response-glyph" aria-hidden="true">&#123; &#125;</span>
+                  <strong>Your response will appear here</strong>
+                  <p>Choose an operation, review the JSON body and approve a single paid request.</p>
+                </div>
+              )}
+            </section>
+          </div>
+
+          <div className="security-note"><span aria-hidden="true">i</span><p>Only the eight listed routes are proxied. Your wallet signs payment locally; no private key is sent to this app.</p></div>
+        </main>
+      </div>
     </div>
   );
 }
