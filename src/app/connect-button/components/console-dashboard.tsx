@@ -9,6 +9,7 @@ import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { defineChain } from "thirdweb";
 import { client as thirdwebClient } from "../../../lib/client";
 import { operations, validateOperationBody, type OperationId } from "../../../lib/bitcoin-operations";
+import { ThirdwebChat } from "./thirdweb-chat";
 
 type ApiResult = {
   status: number;
@@ -27,7 +28,7 @@ function prettyJson(value: unknown) {
 export function ConsoleDashboard() {
   const account = useActiveAccount();
   const [selectedId, setSelectedId] = useState<OperationId>("address");
-  const [activeTool, setActiveTool] = useState<"api" | AssetToolMode>("api");
+  const [activeTool, setActiveTool] = useState<"api" | "chat" | AssetToolMode>("api");
   const [requestBody, setRequestBody] = useState(prettyJson(operations[0].example));
   const [approvePayment, setApprovePayment] = useState(false);
   const [confirmBroadcast, setConfirmBroadcast] = useState(false);
@@ -182,6 +183,7 @@ export function ConsoleDashboard() {
             <button type="button" className={`tool-tab${activeTool === "buy" ? " is-active" : ""}`} onClick={() => setActiveTool("buy")} aria-current={activeTool === "buy" ? "page" : undefined}>Buy</button>
             <button type="button" className={`tool-tab${activeTool === "checkout" ? " is-active" : ""}`} onClick={() => setActiveTool("checkout")} aria-current={activeTool === "checkout" ? "page" : undefined}>Checkout</button>
             <button type="button" className={`tool-tab${activeTool === "transfer" ? " is-active" : ""}`} onClick={() => setActiveTool("transfer")} aria-current={activeTool === "transfer" ? "page" : undefined}>Transfer</button>
+            <button type="button" className={`tool-tab${activeTool === "chat" ? " is-active" : ""}`} onClick={() => setActiveTool("chat")} aria-current={activeTool === "chat" ? "page" : undefined}>AI Assistant</button>
           </nav>
           {activeTool === "api" ? <>
           <div className="page-heading">
@@ -268,7 +270,7 @@ export function ConsoleDashboard() {
           </div>
 
           <div className="security-note"><span aria-hidden="true">i</span><p>Only the eight listed routes are proxied. Your wallet signs payment locally; no private key is sent to this app.</p></div>
-          </> : <AssetTools mode={activeTool} />}
+          </> : activeTool === "chat" ? <ThirdwebChat accountAddress={account?.address} /> : <AssetTools mode={activeTool} />}
         </main>
       </div>
     </div>

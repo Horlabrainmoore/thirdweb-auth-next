@@ -3,9 +3,9 @@ import "./styles.css";
 import { ThirdwebProvider } from "thirdweb/react";
 
 export const metadata: Metadata = {
-  title: "Bitcoin Explorer API",
-  description: "Explore Bitcoin addresses, transactions and blocks with pay-per-request x402 endpoints.",
-  applicationName: "Bitcoin Explorer API",
+  title: "Thirdweb Onchain Console",
+  description: "Explore Bitcoin APIs, connect a wallet, and chat with a thirdweb AI assistant for onchain help.",
+  applicationName: "Thirdweb Onchain Console",
 };
 
 export const viewport: Viewport = {
