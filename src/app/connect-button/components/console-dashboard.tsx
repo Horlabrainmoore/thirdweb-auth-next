@@ -6,7 +6,7 @@ import { ExactEvmScheme, type ClientEvmSigner } from "@x402/evm";
 import { x402Client } from "@x402/core/client";
 import { wrapFetchWithPayment } from "@x402/fetch";
 import { ConnectButton, useActiveAccount } from "thirdweb/react";
-import { defineChain } from "thirdweb";
+import { supportedEvmChains, baseChain } from "../../../lib/evm-chains";
 import { client as thirdwebClient } from "../../../lib/client";
 import { operations, validateOperationBody, type OperationId } from "../../../lib/bitcoin-operations";
 import { ThirdwebChat } from "./thirdweb-chat";
@@ -18,7 +18,6 @@ type ApiResult = {
   durationMs: number;
 };
 
-const baseChain = defineChain(8453);
 const endpointGroups = ["Address", "Transactions", "Blocks", "Broadcast"] as const;
 
 function prettyJson(value: unknown) {
@@ -139,7 +138,7 @@ export function ConsoleDashboard() {
         </a>
         <div className="topbar-center"><span className="network-dot" /> Bitcoin mainnet <span className="topbar-divider">/</span> x402 v2</div>
         <div className="topbar-wallet">
-          <ConnectButton client={thirdwebClient} chain={baseChain} connectButton={{ label: "Connect Base wallet" }} />
+          <ConnectButton client={thirdwebClient} chain={baseChain} chains={[...supportedEvmChains]} connectButton={{ label: "Connect wallet" }} />
         </div>
       </header>
 
