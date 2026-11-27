@@ -12,7 +12,7 @@ const JWTCookiePage: NextPage = () => {
       <ConnectButton accountAbstraction={{
         chain: defineChain(17000),
         sponsorGas: true
-      }} client={client} />
+      }} client={client} autoConnect={false} />
       <h2>Step 2: Sign the login payload</h2>
       <LoginButton />
     </div>

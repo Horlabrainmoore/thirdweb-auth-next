@@ -138,7 +138,7 @@ export function ConsoleDashboard() {
         </a>
         <div className="topbar-center"><span className="network-dot" /> Bitcoin mainnet <span className="topbar-divider">/</span> x402 v2</div>
         <div className="topbar-wallet">
-          <ConnectButton client={thirdwebClient} chain={baseChain} chains={[...supportedEvmChains]} connectButton={{ label: "Connect wallet" }} />
+          <ConnectButton client={thirdwebClient} chain={baseChain} chains={[...supportedEvmChains]} autoConnect={false} connectButton={{ label: "Connect wallet" }} />
         </div>
       </header>
 
