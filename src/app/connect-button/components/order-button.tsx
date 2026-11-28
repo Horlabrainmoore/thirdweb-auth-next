@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { BuyWidget } from "thirdweb/react";
 import { arbitrum } from "thirdweb/chains";
@@ -12,7 +12,7 @@ export type OrderButtonProps = {
   /** Amount in the chosen fiat currency (BuyWidget) */
   amount?: string;
   /** Fiat currency code */
-  currency?: string;
+  currency?: ComponentProps<typeof BuyWidget>["currency"];
   /** Optional product / order reference for your backend */
   orderRef?: string;
   className?: string;
