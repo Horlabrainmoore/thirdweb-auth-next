@@ -1,19 +1,28 @@
 import type { Metadata, Viewport } from "next";
 import "./styles.css";
 import { ThirdwebProvider } from "thirdweb/react";
+import { ThemeProvider } from "./components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Thirdweb Onchain Console | Base & Tempo",
-  description: "Explore Bitcoin APIs, connect a wallet, and chat with a thirdweb AI assistant across Base and Tempo networks.",
-  applicationName: "Thirdweb Onchain Console",
+  title: "Bitcoin Explorer API · BrainPay",
+  description:
+    "Explore Bitcoin addresses, transactions and blocks with pay-per-request x402 endpoints, live blocks, Lightning / NWC, and thirdweb commerce.",
+  applicationName: "Bitcoin Explorer API",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f4f6f8",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f6f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1216" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
 
-export default function ThirdwebProviderLayout({ children }: { children: React.ReactNode }) {
-  return <ThirdwebProvider>{children}</ThirdwebProvider>;
+export default function ConnectButtonLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ThirdwebProvider>
+      <ThemeProvider>{children}</ThemeProvider>
+    </ThirdwebProvider>
+  );
 }
