@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./styles.css";
 import { ThirdwebProvider } from "thirdweb/react";
-import { ThemeProvider } from "./components/theme-provider";
 
 export const metadata: Metadata = {
   title: "Bitcoin Explorer API · BrainPay",
@@ -21,8 +20,6 @@ export const viewport: Viewport = {
 
 export default function ConnectButtonLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ThirdwebProvider>
-      <ThemeProvider>{children}</ThemeProvider>
-    </ThirdwebProvider>
+    <ThirdwebProvider>{children}</ThirdwebProvider>
   );
 }
